@@ -439,12 +439,13 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
                 ]).filter(([_, obj]) => Object.keys(obj).length > 0)
         );
 
-        if (Object.keys(formattedData).length === 0) {
-            ui.notifications.warn(game.i18n.format('BTFG.CompendiumExporter.NoExportCustomMapping', {
-                pack: pack ? pack.metadata.label : game.i18n.localize("BTFG.CompendiumExporter.BulkExport")
-            }));
-            return null;
-        }
+        // Allow defualt mapping in bulk export
+        // if (Object.keys(formattedData).length === 0) {
+        //     ui.notifications.warn(game.i18n.format('BTFG.CompendiumExporter.NoExportCustomMapping', {
+        //         pack: pack ? pack.metadata.label : game.i18n.localize("BTFG.CompendiumExporter.BulkExport")
+        //     }));
+        //     return null;
+        // }
 
         return formattedData;
     }
