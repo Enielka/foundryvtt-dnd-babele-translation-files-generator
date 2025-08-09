@@ -129,7 +129,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
             if (!packs[packageName]) packs[packageName] = {
                 icon: foundry.packages.PACKAGE_TYPES[pack.metadata.packageType]?.icon
             };
-            
+
             packs[packageName][pack.metadata.name] = {
                 id: pack.metadata.id,
                 label: pack.metadata.label,
@@ -141,7 +141,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
         context.packs = packs;
 
         context.selectedPacks = this.#selectedPacks;
-        
+
         // Tabs
         this.#activeTab = !this.#activeTab ? "Actor" : this.#activeTab;
         context.tabs = this.constructor.TABS.reduce((tabs, { id, icon, condition }) => {
@@ -154,7 +154,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
             });
             return tabs;
         }, []);
-        
+
         // Mappings
         const mappings = (context.mappings = []);
         for (const [i, mapping] of this.#mappings[this.#activeTab].entries()) {
@@ -184,7 +184,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
             field: this.#options.schema.getField("includeCustomMappingInFiles"),
             value: this.#options.includeCustomMappingInFiles,
         };
-        
+
         context.exportMappingWithPacks = {
             field: this.#options.schema.getField("exportMappingWithPacks"),
             value: this.#options.exportMappingWithPacks,
@@ -228,7 +228,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
     static async #onToggleCollapse(event, target) {
         target.closest(".collapsible")?.classList.toggle("collapsed");
     }
-    
+
     /**
      * Handle opening a compendium.
      * @this {CompendiumExporterApp}
@@ -307,10 +307,10 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
 
         const input = target.closest(".mapping-actions")?.querySelector('#import-custom-mapping-input');
         if (!input) return;
-        
+
         input.value = "";
         input.addEventListener('change', (e) => this._overrideMappings(e));
-        
+
         input.click();
     }
 
@@ -342,13 +342,13 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
                     this.#selectedFile = event.target.files[0];
                     await this._loadFileMapping();
                 }
-                
+
                 const data = foundry.utils.duplicate(formData.object);
 
                 this.#selectedPacks = Object.keys(data).filter(key => this.#packsIds.includes(key) && data[key] === true);
 
                 this.#options.updateSource(foundry.utils.duplicate(data))
-                
+
                 this.#mappings.updateSource(foundry.utils.duplicate(data));
                 await this._savePackMapping();
 
@@ -357,7 +357,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
             case "submit":
                 var pack = this._getPack();
 
-                if (!this.#options.exportMappingWithPacks && this.#selectedPacks.length === 1) {
+                if (!this.#options.exportMappingWithPacks && (this.#selectedPacks?.length ?? 0) === 1) {
                     pack = this._getPack(this.#selectedPacks[0]);
                 }
 
@@ -366,7 +366,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
                     sortEntries: this.#options.sortEntries,
                     useIdAsKey: this.#options.useIdAsKey
                 };
-                
+
                 if (pack) {
                     await ExporterInstanciator.createForPack(pack, options, this.#selectedFile).export();
                 }
@@ -419,14 +419,14 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
 
     _formatExportMapping() {
         const pack = this._getPack();
-        
+
         const filteredTypes = {
             Adventure: ["Actor", "Item", "Scene", "JournalEntry"],
             Actor: ["Actor", "Item"]
         };
 
         const allowedTypes = pack ? filteredTypes[pack.metadata.type] || [`${pack.metadata.type}`] : Object.keys(this.#mappings);
-        
+
         const formattedData = Object.fromEntries(
             Object.entries(this.#mappings)
                 .filter(([type]) => allowedTypes.includes(type))
@@ -483,7 +483,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
                     mapping[pack.metadata.type] = foundry.utils.mergeObject(mapping[pack.metadata.type], dataset.mapping);
                 }
             }
-            
+
             if (!this.#options.includeCustomMappingInFiles) delete dataset.mapping;
 
             zip.file(`${pack.metadata.id}.json`, JSON.stringify(dataset, null, 2));
@@ -513,7 +513,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
             const pack = this._getPack();
 
             const allMapping = ["Actor", "Item", "Scene", "JournalEntry"];
-            
+
             if (pack && !allMapping.includes(pack.metadata.type)) return;
 
             const filteredTypes = {
@@ -546,7 +546,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
 
             this.#mappings.updateSource(formattedMappings);
             await this._savePackMapping();
-            
+
             this.render({ parts: ["export"] });
         } catch (error) {
             ui.notifications.error(game.i18n.format('BTFG.Errors.CanNotReadFile', {
@@ -599,7 +599,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
         button.innerHTML = `
             <i class="fa-solid fa-download" inert></i>
             ${game.i18n.localize("BTFG.CompendiumExporter.Open")}`;
-      
+
         button.addEventListener("click", event => (new CompendiumExporterApp()).render({ force: true }));
 
         let headerActions = html.querySelector(".header-actions");
