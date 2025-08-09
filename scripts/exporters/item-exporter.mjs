@@ -6,21 +6,26 @@ export class ItemExporter extends AbstractExporter {
         const documentData = { name };
 
         if (system?.description.value) documentData.description = system.description.value;
+        if (system?.activation?.condition) documentData.activation = { condition: system.activation.condition };
+        if (system?.materials?.value) documentData.materials = { value: system.materials.value };
+        if (system?.target?.affects?.special) documentData.target = { affects: { special: system.target.affects.special } };
+        if (system?.range?.special) documentData.range = { special: system.range.special };
 
         const keysToIgnore = ["system.type.subtype"];
-        
+
         this._addCustomMapping(customMapping, document, documentData, type !== "race" ? keysToIgnore : []);
-        
+
         if (system?.activities) {
             Object.keys(system.activities).forEach(activity => {
-                const { name, activation, description, roll, type, _id, profiles } = system.activities[activity];
+                const { name, activation, description, roll, type, _id, profiles, target, range, materials } = system.activities[activity];
                 const currentActivity = {};
 
                 if (name) currentActivity.name = name;
                 if (roll?.name) currentActivity.roll = roll.name;
                 if (activation?.condition) currentActivity.condition = activation.condition;
                 if (description?.chatFlavor) currentActivity.chatFlavor = description.chatFlavor;
-
+                if (target?.affects?.special) currentActivity.affects = { special: target.affects.special };
+                if (range?.special) currentActivity.range = { special: range.special };
                 if (profiles) {
                     const filteredProfiles = profiles
                         .filter(({ name }) => name)

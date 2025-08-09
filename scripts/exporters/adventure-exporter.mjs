@@ -74,8 +74,8 @@ export class AdventureExporter extends AbstractExporter {
       for (const document of avPack.actors) {
         const documentData = exporters.ActorExporter.getDocumentData(document, this.options.mapping);
 
-        exporters.ActorExporter.addBaseMapping(this.dataset.mapping.actors, document, documentData);
-        
+        exporters.ActorExporter.addBaseMapping(this.dataset.mapping.actors ?? {}, document, documentData);
+
         let key = this._getExportKey(document);
         key = this.dataset.entries[avPack.name].actors[key] && !foundry.utils.objectsEqual(this.dataset.entries[avPack.name].actors[key], documentData) ? document._id : key;
 
@@ -88,8 +88,8 @@ export class AdventureExporter extends AbstractExporter {
       for (const document of avPack.items) {
         const documentData = exporters.ItemExporter.getDocumentData(document, this.options.mapping.Item);
 
-        exporters.ItemExporter.addBaseMapping(this.dataset.mapping.items, document, documentData);
-        
+        exporters.ItemExporter.addBaseMapping(this.dataset.mapping.items ?? {}, document, documentData);
+
         let key = this._getExportKey(document);
         key = this.dataset.entries[avPack.name].items[key] && !foundry.utils.objectsEqual(this.dataset.entries[avPack.name].items[key], documentData) ? document._id : key;
 
@@ -123,8 +123,8 @@ export class AdventureExporter extends AbstractExporter {
 
         let key = this._getExportKey(document);
         key = this.dataset.entries[avPack.name].journals[key] && !foundry.utils.objectsEqual(this.dataset.entries[avPack.name].journals[key], documentData) ? document._id : key;
-        
-        this.dataset.entries[avPack.name].journals[key] = foundry.utils.mergeObject(documentData,(this.existingContent[avPack.name]?.journals ?? {})[key] ?? {});
+
+        this.dataset.entries[avPack.name].journals[key] = foundry.utils.mergeObject(documentData, (this.existingContent[avPack.name]?.journals ?? {})[key] ?? {});
 
         if (!this.options.asZip) this._stepProgressBar();
       }
