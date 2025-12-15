@@ -50,6 +50,56 @@
       </fieldset>
       {{/if}}
     </section>
+    {{#if hasAdvanced}}
+    <hr>
+    <div class="collapsible{{#if collapseAdvanced}} collapsed{{/if}}">
+      <div class="advanced">
+        <label data-action="toggleCollapse">
+          <span>{{ localize "BTFG.CompendiumExporter.Advanced" }}</span>
+          <i class="fa-solid fa-caret-down"></i>
+        </label>
+      </div>
+      <div class="collapsible-content">
+        <div class="wrapper">
+          {{#each pillsByType as |pillGroup type|}}
+          {{#if (or (eq ../packType type) (not ../packType) (eq ../packType "Adventure"))}}
+          <fieldset>
+            <legend>
+              {{ localize (concat "DOCUMENT." type) }}
+              {{#if (lookup ../pillsEditModeByType type)}}
+              <a data-action="validatePills" data-type="{{type}}"><i class="fa-solid fa-check"></i></a>
+              {{else}}
+              <a data-action="editPills" data-type="{{type}}"><i class="fas fa-cog"></i></a>
+              {{/if}}
+            </legend>
+
+            {{#if (lookup ../pillsEditModeByType type)}}
+            <input type="text" name="pillsInput.{{type}}" value="{{lookup ../pillsInputByType type}}"
+              placeholder="{{ localize (concat "BTFG.CompendiumExporter." type "Placeholder") }}" />
+            <p class="hint">{{ localize "BTFG.CompendiumExporter.ValuesHint" }}</p>
+            {{else}}
+            {{#each pillGroup as |pills|}}
+            <ul class="pills">
+              {{#each pills as |pill idx|}}
+              <li class="pill green">
+                <span class="label">
+                  {{pill}}
+                  <a class="remove" data-action="removePill" data-type="{{type}}" data-idx="{{idx}}"><i
+                      class="fas fa-times"></i></a>
+                </span>
+              </li>
+              {{/each}}
+            </ul>
+            {{/each}}
+            {{/if}}
+            <p class="hint">{{ localize (concat "BTFG.CompendiumExporter.Include" type) }}</p>
+          </fieldset>
+          {{/if}}
+          {{/each}}
+        </div>
+      </div>
+    </div>
+    {{/if}}
     {{#unless pack}}
     <div>
       {{#each packs as |pack packKey|}}

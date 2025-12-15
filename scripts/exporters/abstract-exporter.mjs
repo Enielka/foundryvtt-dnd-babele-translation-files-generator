@@ -71,23 +71,23 @@ export class AbstractExporter {
     }
 
     async _processCustomMapping() {
-        const mappingTypes = { Actor: "actors", Item: "items", Scene: "scenes", JournalEntry: "journals" };
+        const mappingTypes = { Actor, Item, Scene, JournalEntry };
 
         if (this.pack.metadata.type === "Adventure") {
-            this.dataset.mapping = Object.fromEntries(Object.values(mappingTypes).map(type => [type, {}]));
-
-            Object.entries(mappingTypes).forEach(([packType, key]) => {
-                Object.values(this.options.mapping[packType] ?? {}).forEach(({ key: k, value: v }) => {
-                    this.dataset.mapping[key][k] = v;
-                });
-
-                if (!Object.keys(this.dataset.mapping[key]).length) delete this.dataset.mapping[key];
-            });
+            if (this.options.asZip) {
+                this.dataset.mapping = { Actor: {}, Item: {}, Scene: {}, JournalEntry: {} };
+            } else {
+                this.dataset.mapping = { actors: {}, items: {}, scenes: {}, journals: {} };
+            }
         } else {
             if (mappingTypes[this.pack.metadata.type]) {
-                Object.values(this.options.mapping[this.pack.metadata.type] ?? {}).forEach(({ key, value }) => {
-                    this.dataset.mapping[key] = value;
-                });
+                if (this.options.asZip) {
+                    if (this.pack.metadata.type === "Actor") {
+                        this.dataset.mapping = { Actor: {}, Item: {} };
+                    } else {
+                        this.dataset.mapping[this.pack.metadata.type] = {};
+                    }
+                }
             }
         }
     }
@@ -108,16 +108,51 @@ export class AbstractExporter {
     }
 
     static _addCustomMapping(customMapping, indexDocument, documentData, keysToIgnore = []) {
+        const mappingAdded = {};
         Object.values(customMapping).forEach(({ key, value }) => {
             if (keysToIgnore.includes(value)) return;
             const documentValue = this._getValueFromMapping(indexDocument, value);
-            if (documentValue) documentData[key] = documentValue;
+            if (documentValue) {
+                documentData[key] = documentValue;
+                mappingAdded[key] = value;
+            }
         });
+        return mappingAdded;
     }
 
     static _hasContent(dataset) {
         if (!dataset) return false;
         return Array.isArray(dataset) ? dataset.length : dataset.size;
+    }
+
+    static _reorderMapping(mapping) {
+        const stringMapping = [];
+        const objectMapping = [];
+
+        for (const [key, value] of Object.entries(mapping)) {
+            if (typeof value === "string") {
+                stringMapping.push([key, value]);
+            } else {
+                objectMapping.push([key, value]);
+            }
+        }
+
+        for (const key of Object.keys(mapping)) {
+            delete mapping[key];
+        }
+
+        for (const [key, value] of [...stringMapping, ...objectMapping]) {
+            mapping[key] = value;
+        }
+    }
+
+    static _parseJson(str) {
+        try {
+            const parsed = JSON.parse(str);
+            return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed) && Object.keys(parsed).length > 0 ? parsed : null;
+        } catch {
+            return null;
+        }
     }
 
     _removeEmptyObjects(obj) {

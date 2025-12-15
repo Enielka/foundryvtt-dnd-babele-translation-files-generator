@@ -1,25 +1,30 @@
 import { AbstractExporter } from './abstract-exporter.mjs';
 
 export class ItemExporter extends AbstractExporter {
-    static getDocumentData(document, customMapping) {
+    static getDocumentData(document, customMapping, datasetMapping) {
         const { name, type, system } = document;
         const documentData = { name };
 
         if (system?.description.value) documentData.description = system.description.value;
 
         const keysToIgnore = ["system.type.subtype"];
-        
-        this._addCustomMapping(customMapping, document, documentData, type !== "race" ? keysToIgnore : []);
-        
+
+        const mappingAdded = this._addCustomMapping(customMapping, document, documentData, type !== "race" ? keysToIgnore : []);
+
+        datasetMapping = foundry.utils.mergeObject(datasetMapping, mappingAdded);
+
         if (system?.activities) {
             Object.keys(system.activities).forEach(activity => {
-                const { name, activation, description, roll, type, _id, profiles } = system.activities[activity];
+                const { name, activation, description, roll, type, _id, profiles, duration, range, target } = system.activities[activity];
                 const currentActivity = {};
 
                 if (name) currentActivity.name = name;
                 if (roll?.name) currentActivity.roll = roll.name;
                 if (activation?.condition) currentActivity.condition = activation.condition;
                 if (description?.chatFlavor) currentActivity.chatFlavor = description.chatFlavor;
+                if (duration?.special) currentActivity.duration = duration.special;
+                if (range?.special) currentActivity.range = range.special;
+                if (target?.affects?.special) currentActivity.target = target.affects.special;
 
                 if (profiles) {
                     const filteredProfiles = profiles
@@ -46,6 +51,19 @@ export class ItemExporter extends AbstractExporter {
                 const changesObj = changes.reduce((acc, change) => {
                     if (change.key === 'name') acc.name = change.value;
                     if (change.key === 'system.description.value') acc['system.description.value'] = change.value;
+                    if (change.key === 'system.unidentified.name') acc['system.unidentified.name'] = change.value;
+                    if (change.key === 'system.unidentified.description') acc['system.unidentified.description'] = change.value;
+                    if (change.key === 'system.details.alignment') acc['system.details.alignment'] = change.value;
+                    if (change.key === 'system.details.type.subtype') acc['system.details.type.subtype'] = change.value;
+                    if (change.key.startsWith("activities[") && (change.key.endsWith(".name") ||
+                        change.key.endsWith(".roll.name") || change.key.endsWith(".activation.condition") ||
+                        change.key.endsWith(".description.chatFlavor") || change.key.endsWith(".duration.special") ||
+                        change.key.endsWith(".range.special") || change.key.endsWith(".target.affects.special"))) {
+                        acc[change.key] = change.value;
+                    }
+                    const obj = this._parseJson(change.value);
+                    if (obj?.condition || obj?.special || obj?.affects?.special) acc[change.key] = change.value;
+
                     return acc;
                 }, {});
 
@@ -154,9 +172,9 @@ export class ItemExporter extends AbstractExporter {
 
         for (const indexDocument of documents) {
             const document = foundry.utils.duplicate(await this.pack.getDocument(indexDocument._id));
-            const documentData = ItemExporter.getDocumentData(document, this.options.mapping.Item);
+            const documentData = ItemExporter.getDocumentData(document, this.options.mapping.Item, this.dataset.mapping.Item ?? this.dataset.mapping);
 
-            ItemExporter.addBaseMapping(this.dataset.mapping, document, documentData);
+            ItemExporter.addBaseMapping(this.dataset.mapping.Item ?? this.dataset.mapping, document, documentData);
 
             let key = this._getExportKey(document);
             key = this.dataset.entries[key] && !foundry.utils.objectsEqual(this.dataset.entries[key], documentData) ? document._id : key;
@@ -165,5 +183,7 @@ export class ItemExporter extends AbstractExporter {
 
             if (!this.options.asZip) this._stepProgressBar();
         }
+
+        ItemExporter._reorderMapping(this.dataset.mapping.Item ?? this.dataset.mapping);
     }
 }

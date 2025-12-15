@@ -24,6 +24,9 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
             openPack: CompendiumExporterApp.#onOpenPack,
             addMapping: CompendiumExporterApp.#addMapping,
             deleteMapping: CompendiumExporterApp.#deleteMapping,
+            editPills: CompendiumExporterApp.#editPills,
+            validatePills: CompendiumExporterApp.#validatePills,
+            removePill: CompendiumExporterApp.#removePill,
             exportMapping: CompendiumExporterApp.#exportMapping,
             importMapping: CompendiumExporterApp.#importMapping,
             unselectFile: CompendiumExporterApp.#unselectFile
@@ -97,12 +100,24 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
     /**
     * Currently selected packs.
     */
-    #selectedPacks;
+    #selectedPacks = [];
 
     /**
     * Currently selected file.
     */
     #selectedFile;
+
+    #pillsByType = {
+        RollTable: { rangeToInclude: [] },
+        JournalEntry: { srcToInclude: [] }
+    };
+
+    #pillsEditModeByType = {
+        RollTable: false,
+        JournalEntry: false
+    };
+
+    #collapseAdvanced = true;
 
     /** @inheritDoc */
     async _prepareContext(options) {
@@ -113,6 +128,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
         context.pack = pack;
         context.packName = pack ? pack.metadata.label : game.i18n.localize("BTFG.CompendiumExporter.BulkExport");
         context.packIcon = pack ? CONFIG[pack.metadata.type].sidebarIcon : "fa-solid fa-book-atlas";
+        context.packType = pack ? pack.metadata.type : null;
 
         const babele = game?.babele;
         context.translatedPack = babele?.initialized && pack
@@ -129,7 +145,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
             if (!packs[packageName]) packs[packageName] = {
                 icon: foundry.packages.PACKAGE_TYPES[pack.metadata.packageType]?.icon
             };
-            
+
             packs[packageName][pack.metadata.name] = {
                 id: pack.metadata.id,
                 label: pack.metadata.label,
@@ -141,7 +157,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
         context.packs = packs;
 
         context.selectedPacks = this.#selectedPacks;
-        
+
         // Tabs
         this.#activeTab = !this.#activeTab ? "Actor" : this.#activeTab;
         context.tabs = this.constructor.TABS.reduce((tabs, { id, icon, condition }) => {
@@ -154,7 +170,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
             });
             return tabs;
         }, []);
-        
+
         // Mappings
         const mappings = (context.mappings = []);
         for (const [i, mapping] of this.#mappings[this.#activeTab].entries()) {
@@ -176,6 +192,19 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
             });
         }
 
+        context.collapseAdvanced = this.#collapseAdvanced;
+
+        context.pillsByType = this.#pillsByType;
+        context.pillsEditModeByType = this.#pillsEditModeByType;
+        context.pillsInputByType = Object.fromEntries(
+            Object.entries(this.#pillsByType).map(([type, pillsObj]) => {
+                const key = Object.keys(pillsObj)[0];
+                return [type, pillsObj[key].join(";")];
+            })
+        );
+
+        context.hasAdvanced = pack ? Object.keys(this.#pillsByType).includes(pack.metadata.type) || pack.metadata.type === "Adventure" : true;
+
         // Selected File
         context.selectedFileName = this.#selectedFile?.name;
 
@@ -184,7 +213,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
             field: this.#options.schema.getField("includeCustomMappingInFiles"),
             value: this.#options.includeCustomMappingInFiles,
         };
-        
+
         context.exportMappingWithPacks = {
             field: this.#options.schema.getField("exportMappingWithPacks"),
             value: this.#options.exportMappingWithPacks,
@@ -226,9 +255,9 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
      * @param {HTMLElement} target  The capturing HTML element which defined a [data-action].
      */
     static async #onToggleCollapse(event, target) {
-        target.closest(".collapsible")?.classList.toggle("collapsed");
+        this.#collapseAdvanced = target.closest(".collapsible")?.classList.toggle("collapsed");
     }
-    
+
     /**
      * Handle opening a compendium.
      * @this {CompendiumExporterApp}
@@ -279,6 +308,44 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
     }
 
     /**
+     * Edit pills.
+     * @this {CompendiumExporterApp}
+     * @param {PointerEvent} event  The originating click event.
+     * @param {HTMLElement} target  The capturing HTML element which defined a [data-action].
+     */
+    static async #editPills(event, target) {
+        const type = target.dataset.type;
+        this.#pillsEditModeByType[type] = true;
+        this.render({ parts: ["export"] });
+    }
+
+    /**
+     * Validate pills.
+     * @this {CompendiumExporterApp}
+     * @param {PointerEvent} event  The originating click event.
+     * @param {HTMLElement} target  The capturing HTML element which defined a [data-action].
+    */
+    static async #validatePills(event, target) {
+        const type = target.dataset.type;
+        this.#pillsEditModeByType[type] = false;
+        this.render({ parts: ["export"] });
+    }
+
+    /**
+     * Remove pill.
+     * @this {CompendiumExporterApp}
+     * @param {PointerEvent} event  The originating click event.
+     * @param {HTMLElement} target  The capturing HTML element which defined a [data-action].
+    */
+    static async #removePill(event, target) {
+        const idx = parseInt(target.dataset.idx);
+        const type = target.dataset.type;
+        const key = Object.keys(this.#pillsByType[type])[0];
+        this.#pillsByType[type][key].splice(idx, 1);
+        this.render({ parts: ["export"] });
+    }
+
+    /**
      * Export custom mapping.
      * @this {CompendiumExporterApp}
      * @param {PointerEvent} event  The originating click event.
@@ -307,10 +374,10 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
 
         const input = target.closest(".mapping-actions")?.querySelector('#import-custom-mapping-input');
         if (!input) return;
-        
+
         input.value = "";
         input.addEventListener('change', (e) => this._overrideMappings(e));
-        
+
         input.click();
     }
 
@@ -342,13 +409,28 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
                     this.#selectedFile = event.target.files[0];
                     await this._loadFileMapping();
                 }
-                
+
                 const data = foundry.utils.duplicate(formData.object);
 
                 this.#selectedPacks = Object.keys(data).filter(key => this.#packsIds.includes(key) && data[key] === true);
 
+                const pillsInput = Object.entries(data)
+                    .filter(([key]) => key.startsWith("pillsInput."))
+                    .reduce((acc, [key, value]) => {
+                        const type = key.split(".")[1];
+                        acc[type] = value;
+                        return acc;
+                    }, {});
+
+                for (const [type, value] of Object.entries(pillsInput)) {
+                    const pills = value.split(";").map(t => t.trim()).filter(Boolean);
+                    const key = Object.keys(this.#pillsByType[type])[0];
+                    this.#pillsByType[type][key] = pills;
+                    this.#pillsEditModeByType[type] = false;
+                }
+
                 this.#options.updateSource(foundry.utils.duplicate(data))
-                
+
                 this.#mappings.updateSource(foundry.utils.duplicate(data));
                 await this._savePackMapping();
 
@@ -357,20 +439,21 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
             case "submit":
                 var pack = this._getPack();
 
-                if (!this.#options.exportMappingWithPacks && this.#selectedPacks.length === 1) {
+                if (!pack && !this.#options.exportMappingWithPacks && this.#selectedPacks.length === 1) {
                     pack = this._getPack(this.#selectedPacks[0]);
                 }
 
                 const options = {
                     mapping: this.#mappings,
+                    pillsByType: this.#pillsByType,
                     sortEntries: this.#options.sortEntries,
                     useIdAsKey: this.#options.useIdAsKey
                 };
-                
+
                 if (pack) {
                     await ExporterInstanciator.createForPack(pack, options, this.#selectedFile).export();
                 }
-                else {
+                else if (this.#selectedPacks.length >= 1) {
                     await this._exportPacks();
                 }
                 break;
@@ -419,14 +502,14 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
 
     _formatExportMapping() {
         const pack = this._getPack();
-        
+
         const filteredTypes = {
             Adventure: ["Actor", "Item", "Scene", "JournalEntry"],
             Actor: ["Actor", "Item"]
         };
 
         const allowedTypes = pack ? filteredTypes[pack.metadata.type] || [`${pack.metadata.type}`] : Object.keys(this.#mappings);
-        
+
         const formattedData = Object.fromEntries(
             Object.entries(this.#mappings)
                 .filter(([type]) => allowedTypes.includes(type))
@@ -449,16 +532,48 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
         return formattedData;
     }
 
+    _reorderMappingGlobal(mappingGlobal) {
+        const typeOrder = ["Actor", "Item", "Scene", "JournalEntry"];
+        const reorderedGlobal = {};
+
+        for (const type of typeOrder) {
+            const mapping = mappingGlobal[type];
+            if (!mapping) continue;
+
+            const stringMapping = [];
+            const objectMapping = [];
+
+            for (const [key, value] of Object.entries(mapping)) {
+                if (typeof value === "string") {
+                    stringMapping.push([key, value]);
+                } else {
+                    objectMapping.push([key, value]);
+                }
+            }
+
+            reorderedGlobal[type] = Object.fromEntries([...stringMapping, ...objectMapping]);
+        }
+
+        for (const key of Object.keys(mappingGlobal)) {
+            delete mappingGlobal[key];
+        }
+
+        for (const [type, value] of Object.entries(reorderedGlobal)) {
+            mappingGlobal[type] = value;
+        }
+    }
+
     async _exportPacks() {
         const zip = new JSZip();
         const options = {
             mapping: this.#mappings,
+            pillsByType: this.#pillsByType,
             sortEntries: this.#options.sortEntries,
             useIdAsKey: this.#options.useIdAsKey,
             asZip: true
         };
 
-        var mapping = this._formatExportMapping();
+        var mapping = {};
 
         const progressBar = ui.notifications.info("BTFG.Exporter.ExportRunning", { localize: true, progress: true });
         var progressNbImported = 0;
@@ -471,20 +586,27 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
             await exporter.export();
 
             var dataset = exporter._getDataset();
-            if (pack.metadata.type === "Adventure") {
-                const adventureTypes = { actors: "Actor", items: "Item", scenes: "Scene", journals: "JournalEntry" };
-                for (const type of Object.keys(dataset.mapping)) {
-                    const packType = adventureTypes[type];
-                    mapping[packType] ??= {}
-                    mapping[packType] = foundry.utils.mergeObject(mapping[packType], dataset.mapping[type]);
+
+            mapping = foundry.utils.mergeObject(mapping, dataset.mapping);
+
+            if (this.#options.includeCustomMappingInFiles) {
+                const mappingTypes = { Actor: "actors", Item: "items", Scene: "scenes", JournalEntry: "journals" };
+                if (pack.metadata.type === "Adventure") {
+                    const remapped = {};
+                    for (const [key, value] of Object.entries(dataset.mapping)) {
+                        const newKey = mappingTypes[key] ?? key;
+                        remapped[newKey] = value;
+                    }
+
+                    dataset.mapping = remapped;
+                } else {
+                    if (mappingTypes[pack.metadata.type]) {
+                        dataset.mapping = dataset.mapping[pack.metadata.type];
+                    }
                 }
             } else {
-                if (mapping[pack.metadata.type]) {
-                    mapping[pack.metadata.type] = foundry.utils.mergeObject(mapping[pack.metadata.type], dataset.mapping);
-                }
+                delete dataset.mapping;
             }
-            
-            if (!this.#options.includeCustomMappingInFiles) delete dataset.mapping;
 
             zip.file(`${pack.metadata.id}.json`, JSON.stringify(dataset, null, 2));
 
@@ -493,6 +615,12 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
         }
 
         if (this.#options.exportMappingWithPacks) {
+            for (const key in mapping) {
+                if (Object.keys(mapping[key]).length === 0) delete mapping[key];
+            }
+
+            this._reorderMappingGlobal(mapping);
+
             zip.file("mapping.json", JSON.stringify(mapping, null, 2));
         }
 
@@ -513,7 +641,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
             const pack = this._getPack();
 
             const allMapping = ["Actor", "Item", "Scene", "JournalEntry"];
-            
+
             if (pack && !allMapping.includes(pack.metadata.type)) return;
 
             const filteredTypes = {
@@ -526,17 +654,17 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
             const mapping = json.mapping ? { [pack.metadata.type]: json.mapping } : json;
 
             const formattedMappings = Object.fromEntries(
-                Object.entries(mapping)
-                    .filter(([type]) => allowedTypes.includes(type))
-                    .map(([type, entries]) => [
-                        type,
-                        Object.entries(entries)
-                            .filter(([_, value]) => typeof value === "string")
-                            .map(([key, value]) => ({ key, value }))
-                    ])
+                allowedTypes.map(type => {
+                    const entries = mapping[type] ?? {};
+                    const formatted = Object.entries(entries)
+                        .filter(([_, value]) => typeof value === "string")
+                        .map(([key, value]) => ({ key, value }));
+                    return [type, formatted];
+                })
             );
 
-            if (Object.keys(formattedMappings).length === 0) {
+            const hasContent = Object.values(formattedMappings).some(arr => arr.length > 0);
+            if (!hasContent) {
                 ui.notifications.warn(game.i18n.format('BTFG.CompendiumExporter.NoImportCustomMapping', {
                     pack: pack ? pack.metadata.label : game.i18n.localize("BTFG.CompendiumExporter.BulkExport"),
                     file: file.name
@@ -546,7 +674,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
 
             this.#mappings.updateSource(formattedMappings);
             await this._savePackMapping();
-            
+
             this.render({ parts: ["export"] });
         } catch (error) {
             ui.notifications.error(game.i18n.format('BTFG.Errors.CanNotReadFile', {
@@ -599,7 +727,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
         button.innerHTML = `
             <i class="fa-solid fa-download" inert></i>
             ${game.i18n.localize("BTFG.CompendiumExporter.Open")}`;
-      
+
         button.addEventListener("click", event => (new CompendiumExporterApp()).render({ force: true }));
 
         let headerActions = html.querySelector(".header-actions");

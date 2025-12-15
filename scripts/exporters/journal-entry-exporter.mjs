@@ -1,10 +1,18 @@
 import { AbstractExporter } from './abstract-exporter.mjs';
 
 export class JournalEntryExporter extends AbstractExporter {
-  static getDocumentData(document, customMapping) {
+  static getDocumentData(document, customMapping, datasetMapping, srcToInclude) {
     const documentData = { name: document.name };
 
-    this._addCustomMapping(customMapping.JournalEntry, document, documentData);
+    const mappingAdded = this._addCustomMapping(customMapping, document, documentData);
+
+    datasetMapping = foundry.utils.mergeObject(datasetMapping, mappingAdded);
+
+    if (this._hasContent(document.categories)) {
+      documentData.categories = Object.fromEntries(
+        document.categories.map(cat => [cat.name, cat.name])
+      );
+    }
 
     if (this._hasContent(document.pages)) {
         const pageTracker = new Set();
@@ -33,12 +41,13 @@ export class JournalEntryExporter extends AbstractExporter {
             }) => {
                 const uniqueName = pageTracker.has(name) ? id : name;
                 pageTracker.add(name);
+                const srcIncluded = (srcToInclude.includes(name) || srcToInclude.includes(id));
                 return [
                     uniqueName,
                     {
                         name,
                         ...(caption && { caption }),
-                        ...(src && { src }),
+                        ...(srcIncluded && src && { src }),
                         ...(width && { width }),
                         ...(height && { height }),
                         ...(text && { text }),
@@ -69,7 +78,9 @@ export class JournalEntryExporter extends AbstractExporter {
     for (const indexDocument of documents) {
       const documentData = JournalEntryExporter.getDocumentData(
         await this.pack.getDocument(indexDocument._id),
-        this.options.mapping
+        this.options.mapping.JournalEntry,
+        this.dataset.mapping.JournalEntry ?? this.dataset.mapping,
+        this.options.pillsByType.JournalEntry.srcToInclude
       );
 
       let key = this._getExportKey(indexDocument);

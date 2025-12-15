@@ -7,9 +7,53 @@
         grid-template-columns: 230px auto;
         grid-template-rows: auto 2.75rem;
 
-        .sidebar { grid-area: sidebar; }
-        .export-options { grid-area: export-options; }
-        .form-footer { grid-area: form-footer; }
+        .sidebar {
+            grid-area: sidebar;
+        }
+
+        .export-options {
+            grid-area: export-options;
+        }
+
+        .form-footer {
+            grid-area: form-footer;
+        }
+    }
+
+    .collapsible {
+        &.collapsed {
+            .fa-caret-down {
+                transform: rotate(-90deg);
+            }
+
+            .collapsible-content {
+                grid-template-rows: 0fr;
+            }
+        }
+
+        .fa-caret-down {
+            transition: transform 250ms ease;
+        }
+
+        .collapsible-content {
+            display: grid;
+            grid-template-rows: 1fr;
+            transition: grid-template-rows 250ms ease;
+
+            >.wrapper {
+                overflow: hidden;
+            }
+        }
+    }
+
+    .collapsible-content>.wrapper:empty {
+        display: none;
+    }
+
+    .wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
     }
 
     .sidebar {
@@ -48,44 +92,8 @@
             }
         }
 
-        .collapsible {
-            &.collapsed {
-                .fa-caret-down {
-                    transform: rotate(-90deg);
-                }
-
-                .collapsible-content {
-                    grid-template-rows: 0fr;
-                }
-            }
-
-            .fa-caret-down {
-                transition: transform 250ms ease;
-            }
-
-            .collapsible-content {
-                display: grid;
-                grid-template-rows: 1fr;
-                transition: grid-template-rows 250ms ease;
-
-                >.wrapper {
-                    overflow: hidden;
-                }
-            }
-        }
-
-        .collapsible-content>.wrapper:empty {
-            display: none;
-        }
-
         .filter-choice {
             cursor: pointer;
-        }
-
-        .wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
         }
     }
 
@@ -103,22 +111,31 @@
         }
 
         .hint {
-            --color-form-hint: var(--color-text-light-6);
-            color: var(--color-text-light-6);
+            --color-form-hint: #999;
+            color: #999;
+        }
+
+        .advanced>label {
+            padding: 5px;
+            cursor: pointer;
+            display: flex;
+            gap: 4px;
         }
 
         fieldset {
             display: flex;
             flex-direction: column;
             flex-wrap: nowrap;
-            border-color: var(--color-fieldset-border);
+            border-color: #434857;
             border-radius: 8px;
         }
 
         .tab.mappings {
             gap: 0.5rem;
             overflow-y: hidden;
-            header, ol {
+
+            header,
+            ol {
                 align-items: center;
                 display: grid;
                 gap: 0.25rem;
@@ -126,15 +143,61 @@
                 margin-top: 5px;
                 padding: 2px;
                 position: relative;
+
                 .controls {
                     text-align: right;
                 }
             }
+
             header {
                 text-align: left;
             }
+
             ol li {
                 display: contents;
+            }
+        }
+
+        .pills {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: .25rem;
+
+            .pill {
+                font-family: Roboto, sans-serif;
+                font-weight: bold;
+                font-size: var(--font-size-11);
+                text-transform: uppercase;
+                border: 1px solid #434857;
+                border-radius: 3px;
+                background: #252830;
+                padding: .1875rem .375rem;
+                display: flex;
+                gap: .25rem;
+                margin: 0;
+
+                &.green {
+                    color: #cfd2da;
+                    border: 1px solid #242731;
+                }
+
+                &.green {
+                    background-color: color-mix(in srgb, #205b15, transparent 25%);
+                }
+
+                .remove {
+                    margin-left: 0.5em;
+                    color: #888;
+                    font-size: 1em;
+                    transition: color 0.2s;
+                }
+
+                .remove:hover {
+                    color: #c00;
+                }
             }
         }
 

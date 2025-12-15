@@ -2,10 +2,18 @@ import { AbstractExporter } from './abstract-exporter.mjs';
 import { ActorExporter } from './actor-exporter.mjs';
 
 export class SceneExporter extends AbstractExporter {
-  static getDocumentData(document, customMapping) {
+  static getDocumentData(document, customMapping, datasetMapping) {
     const documentData = { name: document.name };
 
-    this._addCustomMapping(customMapping.Scene, document, documentData);
+    const mappingAdded = this._addCustomMapping(customMapping.Scene, document, documentData);
+
+    if (datasetMapping.Scene) {
+      datasetMapping.Scene = foundry.utils.mergeObject(datasetMapping.Scene, mappingAdded);
+    } else if (datasetMapping.scenes) {
+      datasetMapping.scenes = foundry.utils.mergeObject(datasetMapping.scenes, mappingAdded);
+    } else {
+      datasetMapping = foundry.utils.mergeObject(datasetMapping, mappingAdded);
+    }
 
     if (this._hasContent(document.drawings)) {
       documentData.drawings = Object.fromEntries(
@@ -25,8 +33,11 @@ export class SceneExporter extends AbstractExporter {
     }
 
     if (this._hasContent(document.tokens)) {
-      for (const { _id, name: tokenName, delta } of document.tokens) {
-        const deltaToken = ActorExporter.getDocumentData(delta, customMapping, true);
+      for (const { _id, name: tokenName, delta, actorId } of document.tokens) {
+        const deltaToken = ActorExporter.getDocumentData(delta, customMapping);
+        ActorExporter.addBaseMapping(datasetMapping.Actor, delta, deltaToken);
+        const actor = game.actors.get(actorId);
+        if (actor?.prototypeToken.name !== tokenName && !deltaToken.name) deltaToken.name = tokenName;
         if (Object.keys(deltaToken).length) {
           documentData.deltaTokens = documentData.deltaTokens ?? {};
           const key = documentData.deltaTokens[tokenName] && !foundry.utils.objectsEqual(documentData.deltaTokens[tokenName], deltaToken) ? _id : tokenName;
@@ -38,14 +49,30 @@ export class SceneExporter extends AbstractExporter {
     return documentData;
   }
 
+  static addBaseMapping(mapping, document, documentData) {
+    const { grid } = document;
+
+    const updateMapping = (field, condition, path, converter) => {
+      if (!mapping[field] && condition) {
+        mapping[field] = { path, converter };
+      }
+    };
+
+    const gridCondition = grid && ["ft", "mi"].includes(grid.units) && grid.distance;
+    updateMapping('grid', gridCondition, 'grid', 'grid');
+
+    updateMapping('deltaTokens', documentData.deltaTokens, 'tokens', 'tokens');
+  }
+
   async _processDataset() {
     const documents = await this.pack.getIndex();
 
     for (const indexDocument of documents) {
-      const documentData = SceneExporter.getDocumentData(
-        await this.pack.getDocument(indexDocument._id),
-        this.options.mapping
-      );
+      const document = await this.pack.getDocument(indexDocument._id);
+      
+      const documentData = SceneExporter.getDocumentData(document, this.options.mapping, this.dataset.mapping.Scene ?? this.dataset.mapping);
+
+      SceneExporter.addBaseMapping(this.dataset.mapping.Scene ?? this.dataset.mapping, document, documentData);
 
       let key = this._getExportKey(indexDocument);
       key = this.dataset.entries[key] && !foundry.utils.objectsEqual(this.dataset.entries[key], documentData) ? indexDocument._id : key;

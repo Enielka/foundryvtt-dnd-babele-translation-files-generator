@@ -31,15 +31,12 @@ export class AdventureExporter extends AbstractExporter {
 
       // Scenes
       for (const document of avPack.scenes) {
-        const documentData = exporters.SceneExporter.getDocumentData(document, this.options.mapping);
+        const documentData = exporters.SceneExporter.getDocumentData(document, this.options.mapping, this.dataset.mapping);
+
+        exporters.SceneExporter.addBaseMapping(this.dataset.mapping.Scene ?? this.dataset.mapping.scenes, document, documentData);
 
         let key = this._getExportKey(document);
         key = this.dataset.entries[avPack.name].scenes[key] && !foundry.utils.objectsEqual(this.dataset.entries[avPack.name].scenes[key], documentData) ? document._id : key;
-
-        if (documentData.deltaTokens) {
-          this.dataset.mapping.scenes ??= {};
-          this.dataset.mapping.scenes.deltaTokens ??= { path: "tokens", converter: "tokens" };
-        }
 
         this.dataset.entries[avPack.name].scenes[key] = foundry.utils.mergeObject(documentData, (this.existingContent[avPack.name]?.scenes ?? {})[key] ?? {});
 
@@ -72,10 +69,10 @@ export class AdventureExporter extends AbstractExporter {
 
       // Actors
       for (const document of avPack.actors) {
-        const documentData = exporters.ActorExporter.getDocumentData(document, this.options.mapping);
+        const documentData = exporters.ActorExporter.getDocumentData(document, this.options.mapping, this.dataset.mapping);
 
-        exporters.ActorExporter.addBaseMapping(this.dataset.mapping.actors, document, documentData);
-        
+        exporters.ActorExporter.addBaseMapping(this.dataset.mapping.Actor ?? this.dataset.mapping.actors, document, documentData);
+
         let key = this._getExportKey(document);
         key = this.dataset.entries[avPack.name].actors[key] && !foundry.utils.objectsEqual(this.dataset.entries[avPack.name].actors[key], documentData) ? document._id : key;
 
@@ -84,12 +81,14 @@ export class AdventureExporter extends AbstractExporter {
         if (!this.options.asZip) this._stepProgressBar();
       }
 
+      exporters.ActorExporter._reorderMapping(this.dataset.mapping.Actor ?? this.dataset.mapping.actors);
+
       // Items
       for (const document of avPack.items) {
-        const documentData = exporters.ItemExporter.getDocumentData(document, this.options.mapping.Item);
+        const documentData = exporters.ItemExporter.getDocumentData(document, this.options.mapping.Item, this.dataset.mapping.Item ?? this.dataset.mapping.items);
 
-        exporters.ItemExporter.addBaseMapping(this.dataset.mapping.items, document, documentData);
-        
+        exporters.ItemExporter.addBaseMapping(this.dataset.mapping.Item ?? this.dataset.mapping.items, document, documentData);
+
         let key = this._getExportKey(document);
         key = this.dataset.entries[avPack.name].items[key] && !foundry.utils.objectsEqual(this.dataset.entries[avPack.name].items[key], documentData) ? document._id : key;
 
@@ -98,9 +97,11 @@ export class AdventureExporter extends AbstractExporter {
         if (!this.options.asZip) this._stepProgressBar();
       }
 
+      exporters.ItemExporter._reorderMapping(this.dataset.mapping.Item ?? this.dataset.mapping.items);
+
       // Tables
       for (const document of avPack.tables) {
-        const documentData = exporters.RollTableExporter.getDocumentData(document);
+        const documentData = exporters.RollTableExporter.getDocumentData(document, this.options.pillsByType.RollTable.rangeToInclude);
 
         let key = this._getExportKey(document);
         key = this.dataset.entries[avPack.name].tables[key] && !foundry.utils.objectsEqual(this.dataset.entries[avPack.name].tables[key], documentData) ? document._id : key;
@@ -119,12 +120,17 @@ export class AdventureExporter extends AbstractExporter {
 
       // Journals
       for (const document of avPack.journal) {
-        const documentData = exporters.JournalEntryExporter.getDocumentData(document, this.options.mapping);
+        const documentData = exporters.JournalEntryExporter.getDocumentData(
+          document,
+          this.options.mapping.JournalEntry,
+          this.dataset.mapping.JournalEntry ?? this.dataset.mapping.journals,
+          this.options.pillsByType.JournalEntry.srcToInclude
+        );
 
         let key = this._getExportKey(document);
         key = this.dataset.entries[avPack.name].journals[key] && !foundry.utils.objectsEqual(this.dataset.entries[avPack.name].journals[key], documentData) ? document._id : key;
-        
-        this.dataset.entries[avPack.name].journals[key] = foundry.utils.mergeObject(documentData,(this.existingContent[avPack.name]?.journals ?? {})[key] ?? {});
+
+        this.dataset.entries[avPack.name].journals[key] = foundry.utils.mergeObject(documentData, (this.existingContent[avPack.name]?.journals ?? {})[key] ?? {});
 
         if (!this.options.asZip) this._stepProgressBar();
       }
@@ -141,9 +147,14 @@ export class AdventureExporter extends AbstractExporter {
         if (!this.options.asZip) this._stepProgressBar();
       }
 
-      // Remove empty collections
+      // Remove empty mapping
+      for (const key in this.dataset.mapping) {
+        if (Object.keys(this.dataset.mapping[key]).length === 0) delete this.dataset.mapping[key];
+      }
+
+      // Remove empty entries
       for (const key in this.dataset.entries[avPack.name]) {
-        if (0 === Object.keys(this.dataset.entries[avPack.name][key]).length) {
+        if (Object.keys(this.dataset.entries[avPack.name][key]).length === 0) {
           delete this.dataset.entries[avPack.name][key];
         }
       }
