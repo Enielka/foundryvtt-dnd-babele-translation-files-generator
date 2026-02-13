@@ -56,8 +56,8 @@ export class ActorExporter extends AbstractExporter {
     }
 
     if (this._hasContent(document.items)) {
-      documentData.items = {};
       document.items.filter(item => !item._tombstone).forEach(item => {
+        documentData.items ??= {};
         const itemDoc = foundry.utils.duplicate(item);
         const itemData = ItemExporter.getDocumentData(itemDoc, customMapping.Item, datasetMapping.Item ?? (datasetMapping.actors ? datasetMapping.items : {}));
         if (datasetMapping.Item) ItemExporter.addBaseMapping(datasetMapping.Item, itemDoc, itemData);
@@ -75,7 +75,7 @@ export class ActorExporter extends AbstractExporter {
         "dnd5edeafened000", "dnd5egrappled000", "dnd5eparalyzed00", "dnd5eprone000000", "dnd5eunconscious"
       ];
       document.effects.filter(effect => !conditionsToIgnore.includes(effect._id) && !effect._tombstone).forEach(effect => {
-        documentData.effects = documentData.effects ?? {};
+        documentData.effects ??= {};
         const { _id, name, description, changes } = effect;
         const changesObj = (changes && Array.isArray(changes)) ? changes.reduce((acc, change) => {
           if (change.key === 'name') acc.name = change.value;
@@ -95,7 +95,7 @@ export class ActorExporter extends AbstractExporter {
 
   static addBaseMapping(mapping, document, documentData) {
     const { system, prototypeToken } = document;
-    const { attributes = {}, traits, details: { habitat } = {} } = system;
+    const { attributes = {}, traits = {}, details: { habitat } = {} } = system;
     const { movement, senses, travel, capacity } = attributes;
     const { languages: { communication } = {}, weight, keel, beam } = traits;
 
