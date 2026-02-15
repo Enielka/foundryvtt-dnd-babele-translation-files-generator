@@ -9,9 +9,15 @@ export class ItemExporter extends AbstractExporter {
 
         const keysToIgnore = ["system.type.subtype"];
 
-        const mappingAdded = this._addCustomMapping(customMapping, document, documentData, type !== "race" ? keysToIgnore : []);
+        const mappingAdded = this._addCustomMapping(customMapping.Item, document, documentData, type !== "race" ? keysToIgnore : []);
 
-        datasetMapping = foundry.utils.mergeObject(datasetMapping, mappingAdded);
+        if (datasetMapping.Item) {
+            datasetMapping.Item = foundry.utils.mergeObject(datasetMapping.Item, mappingAdded);
+        } else if (datasetMapping.items) {
+            datasetMapping.items = foundry.utils.mergeObject(datasetMapping.items, mappingAdded);
+        } else {
+            datasetMapping = foundry.utils.mergeObject(datasetMapping, mappingAdded);
+        }
 
         if (system?.activities) {
             Object.keys(system.activities).forEach(activity => {
@@ -46,15 +52,14 @@ export class ItemExporter extends AbstractExporter {
 
         if (this._hasContent(document.effects)) {
             documentData.effects = {};
+            const defaultChanges = ["name", "system.description.value", "system.details.alignment"];
+            const mappingActors = customMapping.Actor.map(m => m.value);
+            const mappingItems = customMapping.Item.map(m => m.value);
+            const allChanges = [...new Set([...defaultChanges, ...mappingActors, ...mappingItems])];
             document.effects.forEach(effect => {
                 const { _id, name, description, changes } = effect;
                 const changesObj = changes.reduce((acc, change) => {
-                    if (change.key === 'name') acc.name = change.value;
-                    if (change.key === 'system.description.value') acc['system.description.value'] = change.value;
-                    if (change.key === 'system.unidentified.name') acc['system.unidentified.name'] = change.value;
-                    if (change.key === 'system.unidentified.description') acc['system.unidentified.description'] = change.value;
-                    if (change.key === 'system.details.alignment') acc['system.details.alignment'] = change.value;
-                    if (change.key === 'system.details.type.subtype') acc['system.details.type.subtype'] = change.value;
+                    if (allChanges.includes(change.key)) acc[change.key] = change.value;
                     if (change.key.startsWith("activities[") && (change.key.endsWith(".name") ||
                         change.key.endsWith(".roll.name") || change.key.endsWith(".activation.condition") ||
                         change.key.endsWith(".description.chatFlavor") || change.key.endsWith(".duration.special") ||
@@ -172,7 +177,7 @@ export class ItemExporter extends AbstractExporter {
 
         for (const indexDocument of documents) {
             const document = foundry.utils.duplicate(await this.pack.getDocument(indexDocument._id));
-            const documentData = ItemExporter.getDocumentData(document, this.options.mapping.Item, this.dataset.mapping.Item ?? this.dataset.mapping);
+            const documentData = ItemExporter.getDocumentData(document, this.options.mapping, this.dataset.mapping);
 
             ItemExporter.addBaseMapping(this.dataset.mapping.Item ?? this.dataset.mapping, document, documentData);
 

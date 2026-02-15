@@ -26,7 +26,7 @@ export class SceneExporter extends AbstractExporter {
     if (this._hasContent(document.notes)) {
       for (const { text } of document.notes) {
         if (text.length) {
-          documentData.notes = documentData.notes ?? {};
+          documentData.notes ??= {};
           documentData.notes[text] = text;
         }
       }
@@ -39,13 +39,29 @@ export class SceneExporter extends AbstractExporter {
         const actor = game.actors.get(actorId);
         if (actor?.prototypeToken.name !== tokenName && !deltaToken.name) deltaToken.name = tokenName;
         if (Object.keys(deltaToken).length) {
-          documentData.deltaTokens = documentData.deltaTokens ?? {};
+          documentData.deltaTokens ??= {};
           const key = documentData.deltaTokens[tokenName] && !foundry.utils.objectsEqual(documentData.deltaTokens[tokenName], deltaToken) ? _id : tokenName;
           documentData.deltaTokens[key] = deltaToken;
         }
       }
     }
-    
+
+    if (this._hasContent(document.regions)) {
+      documentData.regions ??= {};
+      for (const { _id, name, behaviors } of document.regions) {
+        const regionKey = documentData.regions[name] && !foundry.utils.objectsEqual(documentData.regions[name], { name }) ? _id : name;
+        const region = documentData.regions[regionKey] ??= { name };
+        if (this._hasContent(behaviors)) {
+          region.behaviors ??= {};
+          for (const { _id: bId, name: bName, system: { text } = {} } of behaviors) {
+            const behaviorData = { name: bName, ...(text && { text }) };
+            const behaviorKey = region.behaviors[bName] && !foundry.utils.objectsEqual(region.behaviors[bName], behaviorData) ? bId : bName;
+            region.behaviors[behaviorKey] = behaviorData;
+          }
+        }
+      }
+    }
+
     return documentData;
   }
 
@@ -70,7 +86,7 @@ export class SceneExporter extends AbstractExporter {
     for (const indexDocument of documents) {
       const document = await this.pack.getDocument(indexDocument._id);
       
-      const documentData = SceneExporter.getDocumentData(document, this.options.mapping, this.dataset.mapping.Scene ?? this.dataset.mapping);
+      const documentData = SceneExporter.getDocumentData(document, this.options.mapping, this.dataset.mapping);
 
       SceneExporter.addBaseMapping(this.dataset.mapping.Scene ?? this.dataset.mapping, document, documentData);
 

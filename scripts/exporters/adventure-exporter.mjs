@@ -85,7 +85,7 @@ export class AdventureExporter extends AbstractExporter {
 
       // Items
       for (const document of avPack.items) {
-        const documentData = exporters.ItemExporter.getDocumentData(document, this.options.mapping.Item, this.dataset.mapping.Item ?? this.dataset.mapping.items);
+        const documentData = exporters.ItemExporter.getDocumentData(document, this.options.mapping, this.dataset.mapping);
 
         exporters.ItemExporter.addBaseMapping(this.dataset.mapping.Item ?? this.dataset.mapping.items, document, documentData);
 
