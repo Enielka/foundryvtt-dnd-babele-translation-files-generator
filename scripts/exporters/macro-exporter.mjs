@@ -14,7 +14,7 @@ export class MacroExporter extends AbstractExporter {
       const documentData = MacroExporter.getDocumentData(indexDocument);
 
       let key = this._getExportKey(indexDocument);
-      key = this.dataset.entries[key] && !foundry.utils.objectsEqual(this.dataset.entries[key], documentData) ? indexDocument._id : key;
+      key = this.dataset.entries[key] && !foundry.utils.equals(this.dataset.entries[key], documentData) ? indexDocument._id : key;
       
       this.dataset.entries[key] = foundry.utils.mergeObject(documentData, this.existingContent[key] ?? {});
 

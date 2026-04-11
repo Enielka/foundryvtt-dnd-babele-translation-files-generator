@@ -57,7 +57,7 @@ export class ItemExporter extends AbstractExporter {
             const mappingItems = customMapping.Item.map(m => m.value);
             const allChanges = [...new Set([...defaultChanges, ...mappingActors, ...mappingItems])];
             document.effects.forEach(effect => {
-                const { _id, name, description, changes } = effect;
+                const { _id, name, description, system: { changes } } = effect;
                 const changesObj = (changes && Array.isArray(changes)) ? changes.reduce((acc, change) => {
                     if (allChanges.includes(change.key)) acc[change.key] = change.value;
                     if (change.key.startsWith("activities[") && (change.key.endsWith(".name") ||
@@ -66,15 +66,14 @@ export class ItemExporter extends AbstractExporter {
                         change.key.endsWith(".range.special") || change.key.endsWith(".target.affects.special"))) {
                         acc[change.key] = change.value;
                     }
-                    const obj = this._parseJson(change.value);
-                    if (obj?.condition || obj?.special || obj?.affects?.special) acc[change.key] = change.value;
+                    if (change.value.condition || change.value.special || change.value.affects?.special) acc[change.key] = JSON.stringify(change.value);
 
                     return acc;
                 }, {}) : {};
 
                 const effectData = { name, ...description && { description }, ...Object.keys(changesObj).length && { changes: changesObj } };
 
-                const key = documentData.effects[name] && !foundry.utils.objectsEqual(documentData.effects[name], effectData) ? _id : name;
+                const key = documentData.effects[name] && !foundry.utils.equals(documentData.effects[name], effectData) ? _id : name;
                 documentData.effects[key] = effectData;
             });
         }
@@ -86,7 +85,7 @@ export class ItemExporter extends AbstractExporter {
 
                 if (Object.keys(advancementData).length) {
                     documentData.advancement = documentData.advancement ?? {};
-                    const key = !title?.length || (documentData.advancement[title] && !foundry.utils.objectsEqual(documentData.advancement[title], advancementData)) ? _id : title;
+                    const key = !title?.length || (documentData.advancement[title] && !foundry.utils.equals(documentData.advancement[title], advancementData)) ? _id : title;
                     documentData.advancement[key] = advancementData;
                 }
             });
@@ -183,7 +182,7 @@ export class ItemExporter extends AbstractExporter {
             ItemExporter.addBaseMapping(this.dataset.mapping.Item ?? this.dataset.mapping, document, documentData);
 
             let key = this._getExportKey(document);
-            key = this.dataset.entries[key] && !foundry.utils.objectsEqual(this.dataset.entries[key], documentData) ? document._id : key;
+            key = this.dataset.entries[key] && !foundry.utils.equals(this.dataset.entries[key], documentData) ? document._id : key;
 
             this.dataset.entries[key] = foundry.utils.mergeObject(documentData, this.existingContent[key] ?? {});
 

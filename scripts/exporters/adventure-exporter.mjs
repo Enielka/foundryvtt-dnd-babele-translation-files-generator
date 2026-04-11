@@ -36,7 +36,7 @@ export class AdventureExporter extends AbstractExporter {
         exporters.SceneExporter.addBaseMapping(this.dataset.mapping.Scene ?? this.dataset.mapping.scenes, document, documentData);
 
         let key = this._getExportKey(document);
-        key = this.dataset.entries[avPack.name].scenes[key] && !foundry.utils.objectsEqual(this.dataset.entries[avPack.name].scenes[key], documentData) ? document._id : key;
+        key = this.dataset.entries[avPack.name].scenes[key] && !foundry.utils.equals(this.dataset.entries[avPack.name].scenes[key], documentData) ? document._id : key;
 
         this.dataset.entries[avPack.name].scenes[key] = foundry.utils.mergeObject(documentData, (this.existingContent[avPack.name]?.scenes ?? {})[key] ?? {});
 
@@ -48,7 +48,7 @@ export class AdventureExporter extends AbstractExporter {
         const documentData = exporters.MacroExporter.getDocumentData(document);
 
         let key = this._getExportKey(document);
-        key = this.dataset.entries[avPack.name].macros[key] && !foundry.utils.objectsEqual(this.dataset.entries[avPack.name].macros[key], documentData) ? document._id : key;
+        key = this.dataset.entries[avPack.name].macros[key] && !foundry.utils.equals(this.dataset.entries[avPack.name].macros[key], documentData) ? document._id : key;
 
         this.dataset.entries[avPack.name].macros[key] = foundry.utils.mergeObject(documentData, (this.existingContent[avPack.name]?.macros ?? {})[key] ?? {});
 
@@ -60,7 +60,7 @@ export class AdventureExporter extends AbstractExporter {
         const documentData = exporters.PlaylistExporter.getDocumentData(document);
 
         let key = this._getExportKey(document);
-        key = this.dataset.entries[avPack.name].playlists[key] && !foundry.utils.objectsEqual(this.dataset.entries[avPack.name].playlists[key], documentData) ? document._id : key;
+        key = this.dataset.entries[avPack.name].playlists[key] && !foundry.utils.equals(this.dataset.entries[avPack.name].playlists[key], documentData) ? document._id : key;
 
         this.dataset.entries[avPack.name].playlists[key] = foundry.utils.mergeObject(documentData, (this.existingContent[avPack.name]?.playlists ?? {})[key] ?? {});
 
@@ -74,7 +74,7 @@ export class AdventureExporter extends AbstractExporter {
         exporters.ActorExporter.addBaseMapping(this.dataset.mapping.Actor ?? this.dataset.mapping.actors, document, documentData);
 
         let key = this._getExportKey(document);
-        key = this.dataset.entries[avPack.name].actors[key] && !foundry.utils.objectsEqual(this.dataset.entries[avPack.name].actors[key], documentData) ? document._id : key;
+        key = this.dataset.entries[avPack.name].actors[key] && !foundry.utils.equals(this.dataset.entries[avPack.name].actors[key], documentData) ? document._id : key;
 
         this.dataset.entries[avPack.name].actors[key] = foundry.utils.mergeObject(documentData, (this.existingContent[avPack.name]?.actors ?? {})[key] ?? {});
 
@@ -90,7 +90,7 @@ export class AdventureExporter extends AbstractExporter {
         exporters.ItemExporter.addBaseMapping(this.dataset.mapping.Item ?? this.dataset.mapping.items, document, documentData);
 
         let key = this._getExportKey(document);
-        key = this.dataset.entries[avPack.name].items[key] && !foundry.utils.objectsEqual(this.dataset.entries[avPack.name].items[key], documentData) ? document._id : key;
+        key = this.dataset.entries[avPack.name].items[key] && !foundry.utils.equals(this.dataset.entries[avPack.name].items[key], documentData) ? document._id : key;
 
         this.dataset.entries[avPack.name].items[key] = foundry.utils.mergeObject(documentData, (this.existingContent[avPack.name]?.items ?? {})[key] ?? {});
 
@@ -104,7 +104,7 @@ export class AdventureExporter extends AbstractExporter {
         const documentData = exporters.RollTableExporter.getDocumentData(document, this.options.pillsByType.RollTable.rangeToInclude);
 
         let key = this._getExportKey(document);
-        key = this.dataset.entries[avPack.name].tables[key] && !foundry.utils.objectsEqual(this.dataset.entries[avPack.name].tables[key], documentData) ? document._id : key;
+        key = this.dataset.entries[avPack.name].tables[key] && !foundry.utils.equals(this.dataset.entries[avPack.name].tables[key], documentData) ? document._id : key;
 
         this.dataset.entries[avPack.name].tables[key] = foundry.utils.mergeObject(documentData, (this.existingContent[avPack.name]?.tables ?? {})[key] ?? {});
 
@@ -128,7 +128,7 @@ export class AdventureExporter extends AbstractExporter {
         );
 
         let key = this._getExportKey(document);
-        key = this.dataset.entries[avPack.name].journals[key] && !foundry.utils.objectsEqual(this.dataset.entries[avPack.name].journals[key], documentData) ? document._id : key;
+        key = this.dataset.entries[avPack.name].journals[key] && !foundry.utils.equals(this.dataset.entries[avPack.name].journals[key], documentData) ? document._id : key;
 
         this.dataset.entries[avPack.name].journals[key] = foundry.utils.mergeObject(documentData, (this.existingContent[avPack.name]?.journals ?? {})[key] ?? {});
 
@@ -140,7 +140,7 @@ export class AdventureExporter extends AbstractExporter {
         const documentData = exporters.CardsExporter.getDocumentData(document);
 
         let key = this._getExportKey(document);
-        key = this.dataset.entries[avPack.name].cards[key] && !foundry.utils.objectsEqual(this.dataset.entries[avPack.name].cards[key], documentData) ? document._id : key;
+        key = this.dataset.entries[avPack.name].cards[key] && !foundry.utils.equals(this.dataset.entries[avPack.name].cards[key], documentData) ? document._id : key;
 
         this.dataset.entries[avPack.name].cards[key] = foundry.utils.mergeObject(documentData, (this.existingContent[avPack.name]?.cards ?? {})[key] ?? {});
 

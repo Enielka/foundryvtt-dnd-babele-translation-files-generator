@@ -23,7 +23,7 @@ export class CardsExporter extends AbstractExporter {
       const documentData = CardsExporter.getDocumentData(await this.pack.getDocument(indexDocument._id));
 
       let key = this._getExportKey(indexDocument);
-      key = this.dataset.entries[key] && !foundry.utils.objectsEqual(this.dataset.entries[key], documentData) ? indexDocument._id : key;
+      key = this.dataset.entries[key] && !foundry.utils.equals(this.dataset.entries[key], documentData) ? indexDocument._id : key;
       
       this.dataset.entries[key] = foundry.utils.mergeObject(documentData, this.existingContent[key]);
 

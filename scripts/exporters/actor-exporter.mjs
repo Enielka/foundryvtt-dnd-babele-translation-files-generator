@@ -61,7 +61,7 @@ export class ActorExporter extends AbstractExporter {
         const itemDoc = foundry.utils.duplicate(item);
         const itemData = ItemExporter.getDocumentData(itemDoc, customMapping, datasetMapping.Item ?? (datasetMapping.actors ? datasetMapping.items : {}));
         if (datasetMapping.Item) ItemExporter.addBaseMapping(datasetMapping.Item, itemDoc, itemData);
-        const key = documentData.items[item.name] && !foundry.utils.objectsEqual(documentData.items[item.name], itemData) ? item._id : item.name;
+        const key = documentData.items[item.name] && !foundry.utils.equals(documentData.items[item.name], itemData) ? item._id : item.name;
         documentData.items[key] = itemData;
       });
 
@@ -76,7 +76,7 @@ export class ActorExporter extends AbstractExporter {
       ];
       document.effects.filter(effect => !conditionsToIgnore.includes(effect._id) && !effect._tombstone).forEach(effect => {
         documentData.effects ??= {};
-        const { _id, name, description, changes } = effect;
+        const { _id, name, description, system: { changes } } = effect;
         const changesObj = (changes && Array.isArray(changes)) ? changes.reduce((acc, change) => {
           if (change.key === 'name') acc.name = change.value;
           if (change.key === 'system.description.value') acc['system.description.value'] = change.value;
@@ -85,7 +85,7 @@ export class ActorExporter extends AbstractExporter {
 
         const effectData = { name, ...description && { description }, ...Object.keys(changesObj).length && { changes: changesObj } };
 
-        const key = documentData.effects[name] && !foundry.utils.objectsEqual(documentData.effects[name], effectData) ? _id : name;
+        const key = documentData.effects[name] && !foundry.utils.equals(documentData.effects[name], effectData) ? _id : name;
         documentData.effects[key] = effectData;
       });
     }
@@ -166,7 +166,7 @@ export class ActorExporter extends AbstractExporter {
       ActorExporter.addBaseMapping(this.dataset.mapping.Actor ?? this.dataset.mapping, document, documentData);
 
       let key = this._getExportKey(document);
-      key = this.dataset.entries[key] && !foundry.utils.objectsEqual(this.dataset.entries[key], documentData) ? document._id : key;
+      key = this.dataset.entries[key] && !foundry.utils.equals(this.dataset.entries[key], documentData) ? document._id : key;
 
       this.dataset.entries[key] = foundry.utils.mergeObject(documentData, this.existingContent[key] ?? {});
 

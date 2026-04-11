@@ -40,7 +40,7 @@ export class SceneExporter extends AbstractExporter {
         if (actor?.prototypeToken.name !== tokenName && !deltaToken.name) deltaToken.name = tokenName;
         if (Object.keys(deltaToken).length) {
           documentData.deltaTokens ??= {};
-          const key = documentData.deltaTokens[tokenName] && !foundry.utils.objectsEqual(documentData.deltaTokens[tokenName], deltaToken) ? _id : tokenName;
+          const key = documentData.deltaTokens[tokenName] && !foundry.utils.equals(documentData.deltaTokens[tokenName], deltaToken) ? _id : tokenName;
           documentData.deltaTokens[key] = deltaToken;
         }
       }
@@ -49,13 +49,13 @@ export class SceneExporter extends AbstractExporter {
     if (this._hasContent(document.regions)) {
       documentData.regions ??= {};
       for (const { _id, name, behaviors } of document.regions) {
-        const regionKey = documentData.regions[name] && !foundry.utils.objectsEqual(documentData.regions[name], { name }) ? _id : name;
+        const regionKey = documentData.regions[name] && !foundry.utils.equals(documentData.regions[name], { name }) ? _id : name;
         const region = documentData.regions[regionKey] ??= { name };
         if (this._hasContent(behaviors)) {
           region.behaviors ??= {};
           for (const { _id: bId, name: bName, system: { text } = {} } of behaviors) {
             const behaviorData = { name: bName, ...(text && { text }) };
-            const behaviorKey = region.behaviors[bName] && !foundry.utils.objectsEqual(region.behaviors[bName], behaviorData) ? bId : bName;
+            const behaviorKey = region.behaviors[bName] && !foundry.utils.equals(region.behaviors[bName], behaviorData) ? bId : bName;
             region.behaviors[behaviorKey] = behaviorData;
           }
         }
@@ -91,7 +91,7 @@ export class SceneExporter extends AbstractExporter {
       SceneExporter.addBaseMapping(this.dataset.mapping.Scene ?? this.dataset.mapping, document, documentData);
 
       let key = this._getExportKey(indexDocument);
-      key = this.dataset.entries[key] && !foundry.utils.objectsEqual(this.dataset.entries[key], documentData) ? indexDocument._id : key;
+      key = this.dataset.entries[key] && !foundry.utils.equals(this.dataset.entries[key], documentData) ? indexDocument._id : key;
 
       this.dataset.entries[key] = foundry.utils.mergeObject(documentData, this.existingContent[key] ?? {});
 
