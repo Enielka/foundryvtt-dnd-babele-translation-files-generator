@@ -58,7 +58,7 @@ export class ItemExporter extends AbstractExporter {
             const allChanges = [...new Set([...defaultChanges, ...mappingActors, ...mappingItems])];
             document.effects.forEach(effect => {
                 const { _id, name, description, changes } = effect;
-                const changesObj = changes.reduce((acc, change) => {
+                const changesObj = (changes && Array.isArray(changes)) ? changes.reduce((acc, change) => {
                     if (allChanges.includes(change.key)) acc[change.key] = change.value;
                     if (change.key.startsWith("activities[") && (change.key.endsWith(".name") ||
                         change.key.endsWith(".roll.name") || change.key.endsWith(".activation.condition") ||
@@ -70,7 +70,7 @@ export class ItemExporter extends AbstractExporter {
                     if (obj?.condition || obj?.special || obj?.affects?.special) acc[change.key] = change.value;
 
                     return acc;
-                }, {});
+                }, {}) : {};
 
                 const effectData = { name, ...description && { description }, ...Object.keys(changesObj).length && { changes: changesObj } };
 
@@ -80,7 +80,8 @@ export class ItemExporter extends AbstractExporter {
         }
 
         if (this._hasContent(system?.advancement)) {
-            system.advancement.forEach(({ _id, title, hint }) => {
+            Object.keys(system.advancement).forEach(advancement => {
+                const { _id, title, hint } = system.advancement[advancement];
                 const advancementData = { ...title && { title }, ...hint && { hint } };
 
                 if (Object.keys(advancementData).length) {
@@ -108,8 +109,8 @@ export class ItemExporter extends AbstractExporter {
             (movement.burrow || movement.climb || movement.swim || movement.walk || movement.fly);
         updateMapping('movement', movementCondition, 'system.movement', 'movement');
 
-        const sensesCondition = senses && ["ft", "mi"].includes(senses.units) &&
-            (senses.darkvision || senses.blindsight || senses.tremorsense || senses.truesight);
+        const sensesCondition = senses && ["ft", "mi"].includes(senses.units) && senses.ranges &&
+            (senses.ranges.darkvision || senses.ranges.blindsight || senses.ranges.tremorsense || senses.ranges.truesight);
         updateMapping('senses', sensesCondition, 'system.senses', 'senses');
 
         if (weight && ["lb", "tn"].includes(weight.units) && weight.value) {
@@ -151,8 +152,8 @@ export class ItemExporter extends AbstractExporter {
             }
         }
 
-        if (advancement?.length) {
-            for (const adv of advancement) {
+        if (this._hasContent(advancement)) {
+            for (const adv of Object.values(advancement)) {
                 if (adv.type === "ScaleValue" && adv.configuration.type === "distance" &&
                     ["ft", "mi"].includes(adv.configuration.distance.units)) {
                     for (const key in adv.configuration.scale) {

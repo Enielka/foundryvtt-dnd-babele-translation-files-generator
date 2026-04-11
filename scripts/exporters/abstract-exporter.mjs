@@ -122,7 +122,9 @@ export class AbstractExporter {
 
     static _hasContent(dataset) {
         if (!dataset) return false;
-        return Array.isArray(dataset) ? dataset.length : dataset.size;
+        if (dataset.size !== undefined) return dataset.size > 0;
+        if (Array.isArray(dataset)) return dataset.length > 0;
+        return Object.keys(dataset).length > 0;
     }
 
     static _reorderMapping(mapping) {

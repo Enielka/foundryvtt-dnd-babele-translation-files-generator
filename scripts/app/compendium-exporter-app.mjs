@@ -573,7 +573,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
             asZip: true
         };
 
-        var mapping = {};
+        var mappings = {};
 
         const progressBar = ui.notifications.info("BTFG.Exporter.ExportRunning", { localize: true, progress: true });
         var progressNbImported = 0;
@@ -587,7 +587,7 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
 
             var dataset = exporter._getDataset();
 
-            mapping = foundry.utils.mergeObject(mapping, dataset.mapping);
+            mappings = foundry.utils.mergeObject(mappings, dataset.mapping);
 
             if (this.#options.includeCustomMappingInFiles) {
                 const mappingTypes = { Actor: "actors", Item: "items", Scene: "scenes", JournalEntry: "journals" };
@@ -615,13 +615,13 @@ export class CompendiumExporterApp extends HandlebarsApplicationMixin(Applicatio
         }
 
         if (this.#options.exportMappingWithPacks) {
-            for (const key in mapping) {
-                if (Object.keys(mapping[key]).length === 0) delete mapping[key];
+            for (const key in mappings) {
+                if (Object.keys(mappings[key]).length === 0) delete mappings[key];
             }
 
-            this._reorderMappingGlobal(mapping);
+            this._reorderMappingGlobal(mappings);
 
-            zip.file("mapping.json", JSON.stringify(mapping, null, 2));
+            zip.file("mappings.json", JSON.stringify(mappings, null, 2));
         }
 
         ui.notifications.info(game.i18n.localize('BTFG.Exporter.ExportFinished'));

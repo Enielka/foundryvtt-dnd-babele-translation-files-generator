@@ -116,8 +116,8 @@ export class ActorExporter extends AbstractExporter {
       (movement.burrow || movement.climb || movement.swim || movement.speed || movement.fly);
     updateMapping('movement', movementCondition, 'system.attributes.movement', 'movement');
 
-    const sensesCondition = senses && ["ft", "mi"].includes(senses.units) &&
-      (senses.darkvision || senses.blindsight || senses.tremorsense || senses.truesight);
+    const sensesCondition = senses && ["ft", "mi"].includes(senses.units) && senses.ranges &&
+      (senses.ranges.darkvision || senses.ranges.blindsight || senses.ranges.tremorsense || senses.ranges.truesight);
     updateMapping('senses', sensesCondition, 'system.attributes.senses', 'senses');
 
     const travelCondition = travel && travel.units === "mph" &&
@@ -161,7 +161,7 @@ export class ActorExporter extends AbstractExporter {
     for (const indexDocument of documents) {
       const document = await this.pack.getDocument(indexDocument._id);
 
-      const documentData = ActorExporter.getDocumentData(document, this.options.mapping, this.dataset.mapping);
+      const documentData = ActorExporter.getDocumentData(document.toObject(), this.options.mapping, this.dataset.mapping);
 
       ActorExporter.addBaseMapping(this.dataset.mapping.Actor ?? this.dataset.mapping, document, documentData);
 

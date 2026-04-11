@@ -19,7 +19,7 @@ export class JournalEntryExporter extends AbstractExporter {
 
         documentData.pages = Object.fromEntries(
             document.pages.map(({ 
-                id, 
+                _id, 
                 name, 
                 image: { caption } = {}, 
                 src, 
@@ -39,9 +39,9 @@ export class JournalEntryExporter extends AbstractExporter {
                 } = {}, 
                 flags: { dnd5e: { title: flagsTitle } = {} } = {}
             }) => {
-                const uniqueName = pageTracker.has(name) ? id : name;
+                const uniqueName = pageTracker.has(name) ? _id : name;
                 pageTracker.add(name);
-                const srcIncluded = (srcToInclude.includes(name) || srcToInclude.includes(id));
+                const srcIncluded = (srcToInclude.includes(name) || srcToInclude.includes(_id));
                 return [
                     uniqueName,
                     {
