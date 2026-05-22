@@ -121,7 +121,7 @@ export class ItemExporter extends AbstractExporter {
         }
 
         if (target && ["ft", "mi"].includes(target.template?.units) &&
-            (target.template.size || target.template.height || target.template.width || target.affects.count)) {
+            (target.template.size || target.template.height || target.template.width)) {
             updateMapping('target', true, 'system.target', 'target');
         }
 

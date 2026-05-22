@@ -34,8 +34,11 @@ export class SceneExporter extends AbstractExporter {
 
     if (this._hasContent(document.tokens)) {
       for (const { _id, name: tokenName, delta, actorId } of document.tokens) {
-        const deltaToken = ActorExporter.getDocumentData(delta, customMapping);
-        ActorExporter.addBaseMapping(datasetMapping.Actor, delta, deltaToken);
+        let deltaToken = {};
+        if (delta) {
+          deltaToken = ActorExporter.getDocumentData(delta, customMapping);
+          ActorExporter.addBaseMapping(datasetMapping.Actor, delta, deltaToken);
+        }
         const actor = game.actors.get(actorId);
         if (actor?.prototypeToken.name !== tokenName && !deltaToken.name) deltaToken.name = tokenName;
         if (Object.keys(deltaToken).length) {

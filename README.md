@@ -3,6 +3,7 @@
 D&D - Translation files generator for Babele
 
 ![Foundry v13](https://img.shields.io/badge/foundry-v13-green)
+![Foundry v14](https://img.shields.io/badge/foundry-v14-green)
 <img src="https://img.shields.io/endpoint?url=https%3A%2F%2Ffoundryshields.com%2Fsystem%3FnameType%3Dfoundry%26showVersion%3D1%26style%3Dflat%26url%3Dhttps%3A%2F%2Fgithub.com%2FEnielka%2Ffoundryvtt-dnd-babele-translation-files-generator%2Freleases%2Flatest%2Fdownload%2Fmodule.json&colorB=DF0000">
 
 _(English version below)_
