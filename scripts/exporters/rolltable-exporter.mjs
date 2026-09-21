@@ -25,8 +25,7 @@ export class RollTableExporter extends AbstractExporter {
           if (description) entry.description = description;
           if (rangeIncluded) entry.range = { "0": range[0], "1": range[1] };
 
-          const onlyDescription = Object.keys(entry).length === 1 && entry.description;
-          return onlyDescription ? [uniqueKey, entry.description] : Object.keys(entry).length ? [uniqueKey, entry] : null;
+          return Object.keys(entry).length ? [uniqueKey, entry] : null;
         }).filter(Boolean)
       );
     }

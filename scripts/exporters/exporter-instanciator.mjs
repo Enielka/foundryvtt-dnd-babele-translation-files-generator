@@ -1,6 +1,7 @@
 import * as exporters from './_index.mjs';
 
 const EXPORTERS = {
+  ActiveEffect: exporters.ActiveEffectExporter,
   Actor: exporters.ActorExporter,
   Adventure: exporters.AdventureExporter,
   Cards: exporters.CardsExporter,

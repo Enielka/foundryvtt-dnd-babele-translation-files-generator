@@ -1,3 +1,4 @@
+export { ActiveEffectExporter } from "./active-effect-exporter.mjs";
 export { ActorExporter } from "./actor-exporter.mjs";
 export { AdventureExporter } from "./adventure-exporter.mjs";
 export { CardsExporter } from "./cards-exporter.mjs";

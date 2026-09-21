@@ -1,4 +1,5 @@
 import { AbstractExporter } from './abstract-exporter.mjs';
+import { ActiveEffectExporter } from './active-effect-exporter.mjs';
 
 export class ItemExporter extends AbstractExporter {
     static getDocumentData(document, customMapping, datasetMapping) {
@@ -6,6 +7,8 @@ export class ItemExporter extends AbstractExporter {
         const documentData = { name };
 
         if (system?.description.value) documentData.description = system.description.value;
+        if (system?.range?.special) documentData.range = system.range.special;
+        if (system?.target?.affects?.special) documentData.target = system.target.affects.special;
 
         const keysToIgnore = ["system.type.subtype"];
 
@@ -28,6 +31,7 @@ export class ItemExporter extends AbstractExporter {
                 if (roll?.name) currentActivity.roll = roll.name;
                 if (activation?.condition) currentActivity.condition = activation.condition;
                 if (description?.chatFlavor) currentActivity.chatFlavor = description.chatFlavor;
+                if (description?.value) currentActivity.description = description.value;
                 if (duration?.special) currentActivity.duration = duration.special;
                 if (range?.special) currentActivity.range = range.special;
                 if (target?.affects?.special) currentActivity.target = target.affects.special;
@@ -35,7 +39,7 @@ export class ItemExporter extends AbstractExporter {
                 if (profiles) {
                     const filteredProfiles = profiles
                         .filter(({ name }) => name)
-                        .map(({ name }) => [name, { name }]);
+                        .map(({ name }) => [name, name]);
 
                     if (this._hasContent(filteredProfiles))
                         currentActivity.profiles = Object.fromEntries(filteredProfiles);
@@ -50,42 +54,20 @@ export class ItemExporter extends AbstractExporter {
             });
         }
 
-        if (this._hasContent(document.effects)) {
-            documentData.effects = {};
-            const defaultChanges = ["name", "system.description.value", "system.details.alignment"];
-            const mappingActors = customMapping.Actor.map(m => m.value);
-            const mappingItems = customMapping.Item.map(m => m.value);
-            const allChanges = [...new Set([...defaultChanges, ...mappingActors, ...mappingItems])];
-            document.effects.forEach(effect => {
-                const { _id, name, description, system: { changes } } = effect;
-                const changesObj = (changes && Array.isArray(changes)) ? changes.reduce((acc, change) => {
-                    if (allChanges.includes(change.key)) acc[change.key] = change.value;
-                    if (change.key.startsWith("activities[") && (change.key.endsWith(".name") ||
-                        change.key.endsWith(".roll.name") || change.key.endsWith(".activation.condition") ||
-                        change.key.endsWith(".description.chatFlavor") || change.key.endsWith(".duration.special") ||
-                        change.key.endsWith(".range.special") || change.key.endsWith(".target.affects.special"))) {
-                        acc[change.key] = change.value;
-                    }
-                    if (change.value.condition || change.value.special || change.value.affects?.special) acc[change.key] = JSON.stringify(change.value);
-
-                    return acc;
-                }, {}) : {};
-
-                const effectData = { name, ...description && { description }, ...Object.keys(changesObj).length && { changes: changesObj } };
-
-                const key = documentData.effects[name] && !foundry.utils.equals(documentData.effects[name], effectData) ? _id : name;
-                documentData.effects[key] = effectData;
-            });
-        }
+        const mappingActors = customMapping.Actor.map(m => m.value);
+        const mappingItems = customMapping.Item.map(m => m.value);
+        const allChanges = [...new Set([...ActiveEffectExporter.DEFAULT_CHANGES, ...mappingActors, ...mappingItems])];
+        const effectsData = ActiveEffectExporter.getEffectsData(document.effects, allChanges);
+        if (effectsData) documentData.effects = effectsData;
 
         if (this._hasContent(system?.advancement)) {
             Object.keys(system.advancement).forEach(advancement => {
-                const { _id, title, hint } = system.advancement[advancement];
-                const advancementData = { ...title && { title }, ...hint && { hint } };
+                const { _id, name, hint } = system.advancement[advancement];
+                const advancementData = { ...name && { name }, ...hint && { hint } };
 
                 if (Object.keys(advancementData).length) {
                     documentData.advancement = documentData.advancement ?? {};
-                    const key = !title?.length || (documentData.advancement[title] && !foundry.utils.equals(documentData.advancement[title], advancementData)) ? _id : title;
+                    const key = !name?.length || (documentData.advancement[name] && !foundry.utils.equals(documentData.advancement[name], advancementData)) ? _id : name;
                     documentData.advancement[key] = advancementData;
                 }
             });

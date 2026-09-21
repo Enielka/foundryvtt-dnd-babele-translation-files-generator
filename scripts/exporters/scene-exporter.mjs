@@ -5,6 +5,8 @@ export class SceneExporter extends AbstractExporter {
   static getDocumentData(document, customMapping, datasetMapping) {
     const documentData = { name: document.name };
 
+    if (document.navName) documentData.navName = document.navName;
+
     const mappingAdded = this._addCustomMapping(customMapping.Scene, document, documentData);
 
     if (datasetMapping.Scene) {
@@ -18,7 +20,7 @@ export class SceneExporter extends AbstractExporter {
     if (this._hasContent(document.drawings)) {
       documentData.drawings = Object.fromEntries(
         document.drawings
-        .filter(({ text }) => text.length)
+        .filter(({ text }) => text?.length)
         .map(({ text }) => [text, text])
       );
     }
@@ -33,19 +35,35 @@ export class SceneExporter extends AbstractExporter {
     }
 
     if (this._hasContent(document.tokens)) {
-      for (const { _id, name: tokenName, delta, actorId } of document.tokens) {
+      for (const { _id, name: tokenName, delta, actorId, actorLink } of document.tokens) {
+        const actor = game.actors.get(actorId);
+        const needDeltaName = actor?.prototypeToken.name !== tokenName && !delta?.name;
+
+        if (actorLink) {
+          if (needDeltaName) (documentData.deltaTokens ??= {})[tokenName] = { name: tokenName };
+          continue;
+        }
+
         let deltaToken = {};
         if (delta) {
           deltaToken = ActorExporter.getDocumentData(delta, customMapping);
           ActorExporter.addBaseMapping(datasetMapping.Actor, delta, deltaToken);
         }
-        const actor = game.actors.get(actorId);
-        if (actor?.prototypeToken.name !== tokenName && !deltaToken.name) deltaToken.name = tokenName;
+
+        if (needDeltaName) deltaToken.name = tokenName;
+
         if (Object.keys(deltaToken).length) {
           documentData.deltaTokens ??= {};
           const key = documentData.deltaTokens[tokenName] && !foundry.utils.equals(documentData.deltaTokens[tokenName], deltaToken) ? _id : tokenName;
           documentData.deltaTokens[key] = deltaToken;
         }
+      }
+    }
+
+    if (this._hasContent(document.levels)) {
+      documentData.levels ??= {};
+      for (const { name } of document.levels) {
+        documentData.levels[name] = name;
       }
     }
 

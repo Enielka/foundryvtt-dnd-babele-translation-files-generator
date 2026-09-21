@@ -123,7 +123,7 @@ export class AdventureExporter extends AbstractExporter {
         const documentData = exporters.JournalEntryExporter.getDocumentData(
           document,
           this.options.mapping.JournalEntry,
-          this.dataset.mapping.JournalEntry ?? this.dataset.mapping.journals,
+          this.dataset.mapping.JournalEntry ?? this.dataset.mapping.journals ?? {},
           this.options.pillsByType.JournalEntry.srcToInclude
         );
 

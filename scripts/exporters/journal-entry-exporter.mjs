@@ -61,7 +61,7 @@ export class JournalEntryExporter extends AbstractExporter {
                         ...(flagsTitle && { flagsTitle }),
                         ...(unlinkedSpells && Object.keys(unlinkedSpells).length > 0 && {
                             unlinkedSpells: Object.fromEntries(Object.entries(unlinkedSpells).map(
-                              ([key, value]) => [value.name, { name: value.name }]))
+                              ([key, value]) => [value.name, value.name]))
                         })
                     }
                 ];

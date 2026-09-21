@@ -1,13 +1,16 @@
 import { AbstractExporter } from './abstract-exporter.mjs';
 import { ItemExporter } from './item-exporter.mjs';
+import { ActiveEffectExporter } from './active-effect-exporter.mjs';
 
 export class ActorExporter extends AbstractExporter {
   static getDocumentData(document, customMapping, datasetMapping = {}) {
-    const { name, type, prototypeToken: { name: tokenName } = {}, system: { details: { biography: { value: description } = {} } = {} } } = document;
+    const { name, type, prototypeToken: { name: tokenName } = {}, system } = document;
     const documentData = { ...name && { name } };
 
     if (name?.toLowerCase() !== tokenName?.toLowerCase()) documentData.tokenName = tokenName;
-    if (description) documentData.description = description;
+    if (system?.details?.biography?.value) documentData.description = system.details.biography.value;
+    if (system?.attributes?.senses?.special) documentData.senses = system.attributes.senses.special;
+    if (system?.attributes?.movement?.special) documentData.movement = system.attributes.movement.special;
 
     const keysToIgnore = ["system.details.type.subtype"];
 
@@ -68,27 +71,10 @@ export class ActorExporter extends AbstractExporter {
       ItemExporter._reorderMapping(datasetMapping.Item ?? (datasetMapping.actors ? datasetMapping.items : {}));
     }
 
-    if (this._hasContent(document.effects)) {
-      const conditionsToIgnore = [
-        "dnd5eblinded0000", "dnd5eexhaustion0", "dnd5eincapacitat", "dnd5epetrified00", "dnd5erestrained0",
-        "dnd5estunned0000", "dnd5epoisoned000", "dnd5einvisible00", "dnd5efrightened0", "dnd5echarmed0000",
-        "dnd5edeafened000", "dnd5egrappled000", "dnd5eparalyzed00", "dnd5eprone000000", "dnd5eunconscious"
-      ];
-      document.effects.filter(effect => !conditionsToIgnore.includes(effect._id) && !effect._tombstone).forEach(effect => {
-        documentData.effects ??= {};
-        const { _id, name, description, system: { changes } } = effect;
-        const changesObj = (changes && Array.isArray(changes)) ? changes.reduce((acc, change) => {
-          if (change.key === 'name') acc.name = change.value;
-          if (change.key === 'system.description.value') acc['system.description.value'] = change.value;
-          return acc;
-        }, {}) : {};
-
-        const effectData = { name, ...description && { description }, ...Object.keys(changesObj).length && { changes: changesObj } };
-
-        const key = documentData.effects[name] && !foundry.utils.equals(documentData.effects[name], effectData) ? _id : name;
-        documentData.effects[key] = effectData;
-      });
-    }
+    const effectsData = ActiveEffectExporter.getEffectsData(
+      document.effects, ActiveEffectExporter.ACTOR_CHANGES, ["dnd5eexhaustion0"]
+    );
+    if (effectsData) documentData.effects = effectsData;
 
     return documentData;
   }
