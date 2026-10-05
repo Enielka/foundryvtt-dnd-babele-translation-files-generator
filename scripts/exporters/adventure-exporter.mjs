@@ -147,11 +147,6 @@ export class AdventureExporter extends AbstractExporter {
         if (!this.options.asZip) this._stepProgressBar();
       }
 
-      // Remove empty mapping
-      for (const key in this.dataset.mapping) {
-        if (Object.keys(this.dataset.mapping[key]).length === 0) delete this.dataset.mapping[key];
-      }
-
       // Remove empty entries
       for (const key in this.dataset.entries[avPack.name]) {
         if (Object.keys(this.dataset.entries[avPack.name][key]).length === 0) {
@@ -159,5 +154,10 @@ export class AdventureExporter extends AbstractExporter {
         }
       }
     });
+
+    // Remove empty mapping once every adventure is processed
+    for (const key in this.dataset.mapping) {
+      if (Object.keys(this.dataset.mapping[key]).length === 0) delete this.dataset.mapping[key];
+    }
   }
 }

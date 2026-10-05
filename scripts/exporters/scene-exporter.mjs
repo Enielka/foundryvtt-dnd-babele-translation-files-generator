@@ -47,7 +47,7 @@ export class SceneExporter extends AbstractExporter {
         let deltaToken = {};
         if (delta) {
           deltaToken = ActorExporter.getDocumentData(delta, customMapping);
-          ActorExporter.addBaseMapping(datasetMapping.Actor, delta, deltaToken);
+          ActorExporter.addBaseMapping(datasetMapping.Actor ?? datasetMapping.actors ?? {}, delta, deltaToken);
         }
 
         if (needDeltaName) deltaToken.name = tokenName;
